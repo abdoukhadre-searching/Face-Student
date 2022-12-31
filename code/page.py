@@ -1,4 +1,5 @@
 from tkinter import ttk
+from tkinter.ttk import Combobox
 from tkinter import *
 from tkinter import messagebox
 from PIL import Image,ImageTk
@@ -7,7 +8,7 @@ import cv2
 import dbconfig as connection
 import os
 import numpy as np
-
+from datetime import datetime
 
 
 class pagePrincipal:
@@ -23,13 +24,14 @@ class pagePrincipal:
         self.tab3 = ttk.Frame(self.tabControl)
         self.tab4 = ttk.Frame(self.tabControl)
         self.tab5 = ttk.Frame(self.tabControl)
-
+        self.tab6 = ttk.Frame(self.tabControl)
 
         self.tabControl.add(self.tab1, text ='Authentification')
         self.tabControl.add(self.tab2, text ='Gestion enseignant')
         self.tabControl.add(self.tab3, text ="Gestion etudiant + traitements d'image")
         self.tabControl.add(self.tab4, text ="Gestion des comptes d'utilisateur")
         self.tabControl.add(self.tab5, text ="Gestion liste de présences")
+        self.tabControl.add(self.tab6, text ="Gestion des séances et marquage")
 
         self.tabControl.pack(expand = 1, fill ="both")
         #-----------------------------------------------------
@@ -42,11 +44,84 @@ class pagePrincipal:
         self.tabControl.tab(2, state="normal")
         self.tabControl.tab(3, state="normal")
         self.tabControl.tab(4, state="normal")
+        self.tabControl.tab(5, state="normal")
 
+        # ==================tab3 gestion etudiants
         titre_page = Label(self.tab3, text="Page de gestion des informations des Etudiants",font=("time new roman",16, "bold"),fg="black")
         titre_page.place(x=400, y=20)
         s_titre_page = Label(self.tab3, text="Système de Gestion des Présences des TD et TP - Copyright @2022 ",font=("time new roman",10),fg="black")
         s_titre_page.place(x=400, y=50)
+        #==================tab6 gestion reconnaissance=
+        titre_page_recog = Label(self.tab6, text="Panel pour la reconnaissance faciale et le marquage de présence",font=("time new roman",16, "bold"),fg="black")
+        titre_page_recog.place(x=300, y=20)
+        s_titre_page_recog = Label(self.tab6, text="Système de Gestion des Présences des TD et TP - Copyright @2022 ",font=("time new roman",10),fg="black")
+        s_titre_page_recog.place(x=400, y=50)
+
+        #--Formulaire de seances de td  ou tp 
+        self.var_id_enseignant = IntVar()
+        self.var_matiere = StringVar()
+        self.var_classe = StringVar()
+        self.var_salle  = StringVar()
+        self.var_heure_debut = StringVar()
+        self.var_heure_fin = StringVar()
+        self.var_type_seance = StringVar()
+
+        
+
+        lbl_debut = Label(self.tab6, font=("time new roman",12,"bold"),text="Heure de début",fg='black')
+        lbl_debut.place(x=330,y=90)        
+        h_debut_cbo = Combobox(self.tab6, textvariable=self.var_heure_debut,foreground="black" ,font=("time new roman",12, "bold"), state="readonly")
+        h_debut_cbo["values"]=("Debut","08:00:00","08:15:00","08:30:00","08:45:00","09:00:00","09:15:00","09:30:00","09:45:00","10:00:00","10:15:00","10:30:00","10:45:00")
+        h_debut_cbo.current(0)
+        h_debut_cbo.place(x=480,y=90,width=80)
+
+        lbl_fin = Label(self.tab6, font=("time new roman",12,"bold"), text="Fin de séance",fg='black')
+        lbl_fin.place(x=330,y=120)        
+        h_fin_cbo = Combobox(self.tab6, textvariable=self.var_heure_fin,foreground="black" ,font=("time new roman",12, "bold"), state="readonly")
+        h_fin_cbo["values"]=("Fin","10:00:00","10:15:00","10:30:00","10:45:00","11:00:00","11:15:00","11:30:00","11:45:00","12:00:00","12:15:00","12:30:00","12:45:00","13:00:00")
+        h_fin_cbo.current(0)
+        h_fin_cbo.place(x=480,y=120,width=80)
+
+        lbl_type_seance = Label(self.tab6,font=("time new roman",12,"bold"),text="Type de seance",fg='black')
+        lbl_type_seance.place(x=20,y=90)
+        type_seance_cbo = Combobox(self.tab6, textvariable=self.var_type_seance,foreground="black" ,font=("time new roman",12, "bold"), state="readonly")
+        type_seance_cbo.place(x=150,y=90,width=150)
+        type_seance_cbo['values'] = ("Choisir","TD", "TP")
+        type_seance_cbo.current(0)
+        #contenu seance
+        lbl_contenu_seance = Label(self.tab6,font=("time new roman",12,"bold"),text=" Rapport Contenu seance",fg='black')
+        lbl_contenu_seance.place(x=20,y=120)
+        contenu = Text(self.tab6,fg="black",font=("time new roman",12,"bold"),height=10,width=50,bg='white',relief=FLAT)
+        contenu.place(x=25,y=160)
+
+        lbl_matiere = Label(self.tab6, font=("time new roman",12,"bold"),text="Matière",fg='black')
+        lbl_matiere.place(x=590,y=90)
+        self.matiere_cbo = Combobox(self.tab6, textvariable=self.var_matiere,foreground="black" ,font=("time new roman",12, "bold"), state="readonly")
+        self.matiere_cbo["values"] = ('Java', 'Python', 'Algorithme', 'XML', 'Reseaux')
+        self.matiere_cbo.current(0)
+        # self.matiere_cbo.bind('<<ComboboxSelected>>',self.recup_matiere)
+        self.matiere_cbo.place(x=680,y=90,width=300)
+
+        lbl_classe = Label(self.tab6,font=("time new roman",12,"bold"),text="Classe",fg='black')
+        lbl_classe.place(x=590,y=120)
+        classe_cbo = Combobox(self.tab6, textvariable=self.var_classe,foreground="black" ,font=("time new roman",12, "bold"), state="readonly")
+        classe_cbo.place(x=680,y=120,width=300)
+        classe_cbo['values'] = ("Sélectionner la classe","L1 SRT", "Licence 2", "Licence 3", "Master 1", "Master 2")
+        classe_cbo.current(0)
+
+        #--bouton engistrer 
+        btn_save_seance = Button(self.tab6,bg="#174577",text="Enregister", foreground="white", command="",bd=0,cursor="hand2",activebackground="#174577")
+        btn_save_seance.place(x=500,y=160,width=180,height=33)
+        btn_modifier_seance = Button(self.tab6,bg="#174577",text="Modifier", foreground="white", command="",bd=0,cursor="hand2",activebackground="#174577")
+        btn_modifier_seance.place(x=500,y=200,width=180,height=33)
+        btn_marquage_seance = Button(self.tab6,bg="green",text="Lancer la reconnaissance", foreground="white", command=self.lancer_reconnaissance_seance,bd=0,cursor="hand2",activebackground="lightgreen")
+        btn_marquage_seance.place(x=500,y=240,width=180,height=33)
+
+
+
+        
+
+        #===================================================================
 
         # tabControl_tab1.add(self.tab1_secondaire1, text="Connexion enseignant")
         # tabControl_tab1.add(self.tab1_secondaire2, text="Connexion admin")
@@ -208,6 +283,69 @@ class pagePrincipal:
         self.student_table.bind("<ButtonRelease>", self.get_datatable)
         self.afficher_infos_table()
 
+    def lancer_reconnaissance_seance(self):
+        face_classifier=cv2.CascadeClassifier("classifier/haarcascade_frontalface_default.xml")
+        model_clf = cv2.face.LBPHFaceRecognizer_create()
+        model_clf.read("model/model.xml")
+        cap =cv2.VideoCapture(0, cv2.CAP_DSHOW)
+
+        # img_id=0
+        while True:
+            ret,img=cap.read()#recupere video depuis webcam
+            gray=cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            visages=face_classifier.detectMultiScale(img, 1.7, 5)#(img, 1.05, 6)
+            visages=face_classifier.detectMultiScale(gray, 1.7, 5)
+            #-------- Redimensionner l'Image ---------------
+            minisize = (img.shape[1],img.shape[0])
+            miniframe = cv2.resize(img, minisize)
+            visages =  face_classifier.detectMultiScale(miniframe)
+            couleur = (100,255,255)
+            couleur_verte = (0,255,0)
+            cv2.putText(img,"Reconnaissance faciale + Marquage ",(10,30), cv2.FONT_HERSHEY_COMPLEX, 0.8, (0,255,0), 2) 
+            cv2.putText(img,f"Date-Heure: {str(datetime.now())}",(10,60), cv2.FONT_HERSHEY_COMPLEX,0.6,(100,55,255),2)                        
+
+            for (x,y,w,h) in visages:
+                # on recupere l'id et le taux de precision [0:1]
+                id,predict=model_clf.predict(gray[y:y+h,x:x+w])
+
+                taux_de_precision=int((100 * (1-predict/300)))
+                print(f"ID Etudiant: {id} ___ Taux de precision {taux_de_precision} %")
+
+                try:
+                    conn = connection.database_connection()
+                    my_curseur = conn.cursor()
+                    my_curseur.execute("SELECT id_etudiant,prenom,nom FROM `etudiant` WHERE id_etudiant="+str(id))
+                    result=my_curseur.fetchone()
+                    if result is not None:
+                        id_etudiant = result[0]
+                        prenom_etudiant = result[1]
+                        nom_etudiant = result[2]
+                        print("Informations étudiants:\n", prenom_etudiant, nom_etudiant)
+                    else:
+                        pass
+                except Exception as ex:
+                    print(f"Erreur: {str(ex)}")
+                    messagebox.showinfo("Erreur",f"Attention une erreur est survenue lors d'une requette: \n{str(ex)}")
+
+                if taux_de_precision > 75:  
+                    cv2.rectangle(img, (x,y), (x+w,y+h), (couleur_verte),2) 
+                    # cv2.rectangle(img,(x-2,y+h+65),(x+w,y+h+5),(0,150,0),-4)
+                    cv2.putText(img,f"NOM : {prenom_etudiant} {nom_etudiant}",(x+5,y+h+20), cv2.FONT_HERSHEY_COMPLEX,0.6,(255,255,255),2) 
+                    cv2.putText(img,f"CODE ETUDIANT: {id}",(x+5,y+h+45), cv2.FONT_HERSHEY_COMPLEX,0.6,(255,255,255),2)   
+                else:              
+                    cv2.rectangle(img, (x,y), (x+w,y+h), (255,255,255),2)                        
+                    cv2.putText(img,"Tentative de reconnaissance de visage...",(x-5,y+h+15), cv2.FONT_HERSHEY_COMPLEX, 0.5, (couleur), 2)
+
+            cv2.imshow("Enregistrement du visage", img)
+
+
+            if cv2.waitKey(1)==27: #if cv2.waitKey(1) or int(img_id) == 100:
+                # dire("Collecte d'image effectuées")
+                break
+        
+        cap.release()
+        cv2.destroyAllWindows()
+
     def actualiser_fichier_reconnaissance(self):
         data_dir=("photos_etudiants")
         path=[os.path.join(data_dir,file) for file in os.listdir(data_dir)]
@@ -334,7 +472,7 @@ class pagePrincipal:
                     cv2.putText(img,str(img_id),(10,90), cv2.FONT_HERSHEY_COMPLEX, 1.2, (255,255,255), 2)
                 cv2.imshow("Enregistrement du visage", img)
 
-                if cv2.waitKey(1)==27 or int(img_id) == 10: #if cv2.waitKey(1) or int(img_id) == 100:
+                if cv2.waitKey(1)==27 or int(img_id) == 30: #if cv2.waitKey(1) or int(img_id) == 100:
                     # dire("Collecte d'image effectuées")
                     break
             
