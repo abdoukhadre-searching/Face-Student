@@ -9,6 +9,8 @@ import dbconfig as connection
 import os
 import numpy as np
 from datetime import datetime
+import datetime as dt
+import time
 
 
 class pagePrincipal:
@@ -288,10 +290,13 @@ class pagePrincipal:
         model_clf = cv2.face.LBPHFaceRecognizer_create()
         model_clf.read("model/model.xml")
         cap =cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        
+        # Pour assurer une seule insertion dans le marquage
+        variable = True
 
         # img_id=0
         while True:
-            ret,img=cap.read()#recupere video depuis webcam
+            ret,img=cap.read() # Recupere video depuis Webcam
             gray=cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             visages=face_classifier.detectMultiScale(img, 1.7, 5)#(img, 1.05, 6)
             visages=face_classifier.detectMultiScale(gray, 1.7, 5)
@@ -332,6 +337,35 @@ class pagePrincipal:
                     # cv2.rectangle(img,(x-2,y+h+65),(x+w,y+h+5),(0,150,0),-4)
                     cv2.putText(img,f"NOM : {prenom_etudiant} {nom_etudiant}",(x+5,y+h+20), cv2.FONT_HERSHEY_COMPLEX,0.6,(255,255,255),2) 
                     cv2.putText(img,f"CODE ETUDIANT: {id}",(x+5,y+h+45), cv2.FONT_HERSHEY_COMPLEX,0.6,(255,255,255),2)   
+                    
+                    # -------------Insertion de cet etudiant dans la table presence pour le marquage...
+                    
+                    date_a_linstant = dt.date.today()
+                    date_a_linstant = date_a_linstant.strftime("%y/%m/%d")
+                    heure_actuelle = time.strftime("%H:%M:%S")
+
+                    seance = "TD" # wala TP
+                    matiere ="PYTHON"
+                    status = "Présent"
+                    enseignant = "Monsieur Dahirou Gueye"
+                    idEtudiant =  id    
+                    nomPrenomEtudiant = f"{prenom_etudiant} {nom_etudiant}"
+                    heureDebut = "18:00"
+                    heureFin = "19:00"
+
+                    requette = "INSERT INTO `presence` (`id`, `date`, `seance`, `matiere`, `status`, `enseignant`, `idEtudiant`, `nomPrenomEtudiant`, `heureDebut`, `heureFin`) VALUES (null,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                    
+                    conn = connection.database_connection()
+                    my_curseur = conn.cursor()
+                    
+                    if variable:
+                        my_curseur.execute(requette, (date_a_linstant, seance, matiere, status, enseignant, idEtudiant, nomPrenomEtudiant, heureDebut, heureFin))
+                        conn.commit()
+                        conn.close()
+                        variable = False                    
+                        print("..marquage effectué avec succes !..")
+
+
                 else:              
                     cv2.rectangle(img, (x,y), (x+w,y+h), (255,255,255),2)                        
                     cv2.putText(img,"Tentative de reconnaissance de visage...",(x-5,y+h+15), cv2.FONT_HERSHEY_COMPLEX, 0.5, (couleur), 2)
