@@ -18,6 +18,7 @@ class pagePrincipal:
         self.root = root
         self.root.title("FACE STUDENT 2022")
         self.root.geometry("1295x728+120+25")
+        self.root.resizable(False, False)
 
         self.tabControl = ttk.Notebook(root)
 
@@ -42,11 +43,11 @@ class pagePrincipal:
         # tabControl_tab1 = ttk.Notebook(self.tab1)
         #-----desactive tous les panels-----------------------
         self.tabControl.tab(0, state="normal")
-        self.tabControl.tab(1, state="normal")
-        self.tabControl.tab(2, state="normal")
-        self.tabControl.tab(3, state="normal")
-        self.tabControl.tab(4, state="normal")
-        self.tabControl.tab(5, state="normal")
+        self.tabControl.tab(1, state="hidden")
+        self.tabControl.tab(2, state="hidden")
+        self.tabControl.tab(3, state="hidden")
+        self.tabControl.tab(4, state="hidden")
+        self.tabControl.tab(5, state="hidden")
 
         # ==================tab3 gestion etudiants
         titre_page = Label(self.tab3, text="Page de gestion des informations des Etudiants",font=("time new roman",16, "bold"),fg="black")
@@ -58,6 +59,11 @@ class pagePrincipal:
         titre_page_recog.place(x=300, y=20)
         s_titre_page_recog = Label(self.tab6, text="Système de Gestion des Présences des TD et TP - Copyright @2022 ",font=("time new roman",10),fg="black")
         s_titre_page_recog.place(x=400, y=50)
+        #==================tab5 gestion liste de presence
+        titre_page_list = Label(self.tab5, text="Gestion de liste de presence au TD et TP",font=("time new roman",40, "bold"),fg="green")
+        titre_page_list.place(x=100, y=20)
+        s_titre_page_list = Label(self.tab5, text="Système de Gestion des Présences des TD et TP - Copyright @2022 ",font=("time new roman",17),fg="black")
+        s_titre_page_list.place(x=200, y=90)
 
         #--Formulaire de seances de td  ou tp 
         self.var_id_enseignant = IntVar()
@@ -69,7 +75,6 @@ class pagePrincipal:
         self.var_type_seance = StringVar()
 
         
-
         lbl_debut = Label(self.tab6, font=("time new roman",12,"bold"),text="Heure de début",fg='black')
         lbl_debut.place(x=330,y=90)        
         h_debut_cbo = Combobox(self.tab6, textvariable=self.var_heure_debut,foreground="black" ,font=("time new roman",12, "bold"), state="readonly")
@@ -227,7 +232,7 @@ class pagePrincipal:
         btn_photo_visage_etudiant.place(x=650,y=290,width=140,height=33)
         btn_code_etudiant = Button(self.tab3,bg="green",text="Actualiser le modèle de reconnaissance", foreground="white", command=self.actualiser_fichier_reconnaissance,bd=0,cursor="hand2",activebackground="lightgreen")
         btn_code_etudiant.place(x=820,y=290,width=230,height=33)
-        btn_supprime_image_etudiant = Button(self.tab3,bg="#174577",text="Supprimer photos", foreground="white", command="",bd=0,cursor="hand2",activebackground="#174577")
+        btn_supprime_image_etudiant = Button(self.tab3,bg="#174577",text="Actualiser", foreground="white", command=self.afficher_infos_table,bd=0,cursor="hand2",activebackground="#174577")
         btn_supprime_image_etudiant.place(x=1070,y=290,width=110,height=33)
 
         #============ Bouton login  =========================
@@ -285,6 +290,104 @@ class pagePrincipal:
         self.student_table.bind("<ButtonRelease>", self.get_datatable)
         self.afficher_infos_table()
 
+
+        #-------- Tableau liste de presence  Etudiant ---------------
+        table_frame_liste=Frame(self.tab5, bd=2, relief=RIDGE)
+        table_frame_liste.place(x=0, y=235, width=1330, height=670) #w=1226
+
+        scroll_x_= ttk.Scrollbar(table_frame_liste, orient= HORIZONTAL)
+        scroll_y_= ttk.Scrollbar(table_frame_liste, orient= VERTICAL)
+
+
+        self.studente_liste_presence= ttk.Treeview(table_frame_liste, columns=("id","date","seance","matiere","status","enseignant","idEtudiant","nomPrenomEtudiant","heureDebut","heureFin"),xscrollcommand=scroll_x_.set,yscrollcommand= scroll_y_.set)
+        s = ttk.Style()
+        s.configure('Treeview', rowheight= 40)
+        s.configure("Treeview.Heading", font=("time new roman", 10, "bold"))
+        scroll_x_.pack(side=BOTTOM, fill=X)
+        scroll_y_.pack(side=RIGHT, fill=Y)
+        scroll_x.config(command=self.studente_liste_presence.xview)
+        scroll_y_.config(command=self.studente_liste_presence.yview)
+
+        self.studente_liste_presence.heading("id",text="ID")
+        self.studente_liste_presence.heading("date",text="Date")
+        self.studente_liste_presence.heading("seance",text="Type de seance")
+        self.studente_liste_presence.heading("matiere",text="Matiere")
+        self.studente_liste_presence.heading("status",text="Status")
+        self.studente_liste_presence.heading("enseignant",text="Enseignant")
+        self.studente_liste_presence.heading("idEtudiant",text="Code Etudiant")
+        self.studente_liste_presence.heading("nomPrenomEtudiant",text="Prenom Nom")
+        self.studente_liste_presence.heading("heureDebut",text="Heure de debut")        
+        self.studente_liste_presence.heading("heureFin",text="Heure de fin")
+
+        #`id_eleve`, `nom`, `adresse`, `dateNaissance`, `niveau`, `niveau`, `sexe`, `domaine`, `annee`, `contactParent`, `enseignant`, `semestre`, `photo`
+
+        self.studente_liste_presence.column("id",width=100,stretch=0)
+        self.studente_liste_presence.column("date",width=100,stretch=0)
+        self.studente_liste_presence.column("seance",width=100,stretch=0)
+        self.studente_liste_presence.column("matiere",width=100,stretch=0)
+        self.studente_liste_presence.column("status",width=100,stretch=0)
+        self.studente_liste_presence.column("enseignant",width=135,stretch=0)
+        self.studente_liste_presence.column("idEtudiant",width=135,stretch=0)
+        self.studente_liste_presence.column("nomPrenomEtudiant",width=120,stretch=0)
+        self.studente_liste_presence.column("heureDebut",width=140,stretch=0)
+        self.studente_liste_presence.column("heureFin",width=140,stretch=0)
+
+
+        self.studente_liste_presence["show"]="headings"
+        self.studente_liste_presence.pack(fill=BOTH,expand=1)
+        # self.studente_liste_presence.bind("<ButtonRelease>", self.get_datatable)
+        self.afficher_liste()
+
+        # champ de recherche
+        self.var_recherche = StringVar()
+        recherche_cbo = Combobox(self.tab5, textvariable=self.var_recherche, foreground="black" ,font=("time new roman",25, "bold"), state="readonly")
+        recherche_cbo["values"]=("Présent","Absent")
+        recherche_cbo.current(0)
+        recherche_cbo.place(x=420, y=150) 
+        recherche_label= Label(self.tab5, text="Filtrer les ",fg="black",font=("Arial", 23)) #flat, groove, raised, ridge, solid, or sunken
+        recherche_label.place(x=200, y=150)
+        recherche_btn= Button(self.tab5, text="Rechercher",bg="lightgreen",command=self.filtre,relief=FLAT, fg="black",font=("Arial", 15)) #flat, groove, raised, ridge, solid, or sunken
+        recherche_btn.place(x=820, y=150)
+        recherche_btn= Button(self.tab5, text="Actualiser",bg="grey",command=self.actualiser_liste,relief=FLAT, fg="black",font=("Arial", 15)) #flat, groove, raised, ridge, solid, or sunken
+        recherche_btn.place(x=950, y=150)
+    
+    def filtre(self):
+        try:
+            conn = connection.database_connection()
+            my_curseur = conn.cursor()
+            my_curseur.execute(f"SELECT * FROM `presence` where status like '{self.var_recherche.get()}'")   
+            etudiants = my_curseur.fetchall()
+            if len(etudiants) != 0:
+                self.studente_liste_presence.delete(*self.studente_liste_presence.get_children())  
+                for etu in etudiants:
+                    self.studente_liste_presence.insert("", END,values=etu)
+                    conn.commit()
+            conn.close()
+        except Exception as ex:
+            messagebox.showinfo("Erreur",f"Une erreur est survenue: {str(ex.args)}")
+            print(f"Erreur lors l'affichage :{str(ex)}")
+
+        
+    def actualiser_liste(self):
+        self.afficher_liste()
+
+    def afficher_liste(self):
+        try:
+            conn = connection.database_connection()
+            my_curseur = conn.cursor()
+            my_curseur.execute("SELECT * FROM `presence`")   
+            etudiants = my_curseur.fetchall()
+            if len(etudiants) != 0:
+                self.studente_liste_presence.delete(*self.studente_liste_presence.get_children())  
+                for etu in etudiants:
+                    self.studente_liste_presence.insert("", END,values=etu)
+                    conn.commit()
+            conn.close()
+        except Exception as ex:
+            messagebox.showinfo("Erreur",f"Une erreur est survenue: {str(ex.args)}")
+            print(f"Erreur lors l'affichage :{str(ex)}")
+
+
     def lancer_reconnaissance_seance(self):
         face_classifier=cv2.CascadeClassifier("classifier/haarcascade_frontalface_default.xml")
         model_clf = cv2.face.LBPHFaceRecognizer_create()
@@ -293,6 +396,10 @@ class pagePrincipal:
         
         # Pour assurer une seule insertion dans le marquage
         variable = True
+
+        # variable etudiant
+        prenom_etudiant = ""
+        nom_etudiant = ""
 
         # img_id=0
         while True:
@@ -325,7 +432,9 @@ class pagePrincipal:
                         id_etudiant = result[0]
                         prenom_etudiant = result[1]
                         nom_etudiant = result[2]
-                        print("Informations étudiants:\n", prenom_etudiant, nom_etudiant)
+                        print("Informations étudiants:\n", prenom_etudiant, nom_etudiant)      
+
+
                     else:
                         pass
                 except Exception as ex:
@@ -335,13 +444,15 @@ class pagePrincipal:
                 if taux_de_precision > 75:  
                     cv2.rectangle(img, (x,y), (x+w,y+h), (couleur_verte),2) 
                     # cv2.rectangle(img,(x-2,y+h+65),(x+w,y+h+5),(0,150,0),-4)
-                    cv2.putText(img,f"NOM : {prenom_etudiant} {nom_etudiant}",(x+5,y+h+20), cv2.FONT_HERSHEY_COMPLEX,0.6,(255,255,255),2) 
-                    cv2.putText(img,f"CODE ETUDIANT: {id}",(x+5,y+h+45), cv2.FONT_HERSHEY_COMPLEX,0.6,(255,255,255),2)   
+                    cv2.putText(img,f"Nom prenom: {prenom_etudiant} {nom_etudiant}",(x+5,y+h+20), cv2.FONT_HERSHEY_COMPLEX,0.6,(255,255,255),2) 
+                    cv2.putText(img,f"Code Etudiant: {id}",(x+5,y+h+45), cv2.FONT_HERSHEY_COMPLEX,0.6,(255,255,255),2)   
                     
                     # -------------Insertion de cet etudiant dans la table presence pour le marquage...
                     
                     date_a_linstant = dt.date.today()
-                    date_a_linstant = date_a_linstant.strftime("%y/%m/%d")
+                    date_a_linstant = str(date_a_linstant)
+                    date_a_linstant = date_a_linstant.replace("/","-")
+                    #date_a_linstant = date_a_linstant.strftime("%y/%m/%d")
                     heure_actuelle = time.strftime("%H:%M:%S")
 
                     seance = "TD" # wala TP
@@ -351,19 +462,42 @@ class pagePrincipal:
                     idEtudiant =  id    
                     nomPrenomEtudiant = f"{prenom_etudiant} {nom_etudiant}"
                     heureDebut = "18:00"
-                    heureFin = "19:00"
+                    heureFin = heure_actuelle
 
                     requette = "INSERT INTO `presence` (`id`, `date`, `seance`, `matiere`, `status`, `enseignant`, `idEtudiant`, `nomPrenomEtudiant`, `heureDebut`, `heureFin`) VALUES (null,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
                     
                     conn = connection.database_connection()
                     my_curseur = conn.cursor()
                     
-                    if variable:
-                        my_curseur.execute(requette, (date_a_linstant, seance, matiere, status, enseignant, idEtudiant, nomPrenomEtudiant, heureDebut, heureFin))
-                        conn.commit()
-                        conn.close()
-                        variable = False                    
-                        print("..marquage effectué avec succes !..")
+                    if variable:                        
+                        # my_curseur.execute(requette, (date_a_linstant, seance, matiere, status, enseignant, idEtudiant, nomPrenomEtudiant, heureDebut, heureFin))
+                        # conn.commit()
+                        # # conn.close()
+                        # variable = False                    
+                        # print("..marquage effectué avec succes !..")
+                        pass
+                    
+                    # Verifie si l'etudiant est déja marqué
+                    try:  
+                        my_curseur.execute(f"SELECT * FROM `presence` WHERE idEtudiant = '{id}' AND date = '{str(date_a_linstant)}'")
+                        result=my_curseur.fetchall()
+                        print("result", result)
+                        if len(result) == 0: # si on a pas de resultat
+                            if variable: 
+                                # inserer presence
+                                my_curseur.execute(requette, (date_a_linstant, seance, matiere, status, enseignant, idEtudiant, nomPrenomEtudiant, heureDebut, heureFin))
+                                conn.commit()
+                                # conn.close()
+                                variable = False                    
+                                print("..marquage effectué avec succes !..")                                                                                            
+                        else: # deja present pour cette date
+                            cv2.putText(img,"Etudiant Present",(x+5,y+h+65), cv2.FONT_HERSHEY_COMPLEX,0.6,(0,255,0),2) 
+                            print("Etudiant Present aujourd'hui")
+                            
+                            
+                    except Exception as ex:
+                        print(f"Erreur: {str(ex)}")                 
+                    
 
 
                 else:              
@@ -449,24 +583,26 @@ class pagePrincipal:
         self.tabControl.tab(2, state="hidden")
         self.tabControl.tab(3, state="hidden")
         self.tabControl.tab(4, state="hidden")
+        self.tabControl.tab(5, state="hidden")
 
     def vers_tab2(self):
-        # login = var_login.get()
-        #     # controle de saise
-        # if var_login.get() == "":
-        #     messagebox.showerror('Erreur', "Champ login obligatoire")
-        # elif var_password.get() == "":
-        #     messagebox.showerror('Erreur', "Champ mot de passe obligatoire")
-        # elif  messagebox.showinfo("Authentification réussi","Bienvenue sur votre espace de travail !!") == 'ok' :
-        #     #--on efface les formulaire
-        #     var_login.set("")
-        #     var_password.set("")
-        self.tabControl.select(1)
-        self.tabControl.tab(0, state="hidden")
-        self.tabControl.tab(1, state="normal")
-        self.tabControl.tab(2, state="normal")
-        self.tabControl.tab(3, state="normal")
-        self.tabControl.tab(4, state="normal")
+        login = self.var_login.get()
+            # controle de saise
+        if login == "":
+            messagebox.showerror('Erreur', "Champ login obligatoire", parent=self.tab1)
+        elif self.var_password.get() == "":
+            messagebox.showerror('Erreur', "Champ mot de passe obligatoire", parent=self.tab1)
+        elif  messagebox.showinfo("Authentification réussi","Bienvenue sur votre espace de travail !!", parent=self.tab1) == 'ok' :
+            #--on efface les formulaire
+            self.var_login.set("")
+            self.var_password.set("")
+            self.tabControl.select(2) # gestin etudaint
+            self.tabControl.tab(0, state="hidden")
+            self.tabControl.tab(1, state="normal")
+            self.tabControl.tab(2, state="normal")
+            self.tabControl.tab(3, state="normal")
+            self.tabControl.tab(4, state="normal")
+            self.tabControl.tab(5, state="normal")
 
     def lancer_camera(self):
         id = self.var_id_etudiant.get()
