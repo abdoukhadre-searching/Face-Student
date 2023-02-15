@@ -13,6 +13,14 @@ import datetime as dt
 import time
 
 
+from infobip_api_client.api_client import ApiClient, Configuration
+from infobip_api_client.model.sms_advanced_textual_request import SmsAdvancedTextualRequest
+from infobip_api_client.model.sms_destination import SmsDestination
+from infobip_api_client.model.sms_response import SmsResponse
+from infobip_api_client.model.sms_textual_message import SmsTextualMessage
+from infobip_api_client.api.send_sms_api import SendSmsApi
+from infobip_api_client.exceptions import ApiException
+
 class pagePrincipal:
     def __init__(self,root):
         self.root = root
@@ -37,6 +45,7 @@ class pagePrincipal:
         self.tabControl.add(self.tab6, text ="Gestion des séances et marquage")
 
         self.tabControl.pack(expand = 1, fill ="both")
+        #self.tabControl.place(x=0,y=-10, )
         #-----------------------------------------------------
         # tab1_secondaire1 = ttk.Frame(self.tab1)
         # tab1_secondaire2 = ttk.Frame(self.tab1)
@@ -73,6 +82,9 @@ class pagePrincipal:
         self.var_heure_debut = StringVar()
         self.var_heure_fin = StringVar()
         self.var_type_seance = StringVar()
+
+        #----var matire
+        self.var_python= StringVar()
 
         
         lbl_debut = Label(self.tab6, font=("time new roman",12,"bold"),text="Heure de début",fg='black')
@@ -145,6 +157,12 @@ class pagePrincipal:
         #------- champs formulaire ---------------------
         self.var_login = StringVar()
         self.var_password = StringVar()
+
+        champ_username = Entry(self.tab1, textvariable=self.var_login ,relief="flat", font=("Arial", 12)) #flat, groove, raised, ridge, solid, or sunken
+        champ_username.place(x=370, y=431)   
+        champ_password = Entry(self.tab1, textvariable=self.var_password, relief="flat", font=("Arial", 12)) #flat, groove, raised, ridge, solid, or sunken
+        champ_password.place(x=370, y=508)
+
         self.var_id_etudiant = IntVar() #integer in db
         self.var_nom_etudiant = StringVar()
         self.var_niveau_etudiant = StringVar()
@@ -154,10 +172,9 @@ class pagePrincipal:
         self.var_lieu_naissance_etudiant = StringVar()
         self.var_tel_etudiant = StringVar()
 
-        champ_username = Entry(self.tab1, textvariable=self.var_login ,relief="flat", font=("Arial", 12)) #flat, groove, raised, ridge, solid, or sunken
-        champ_username.place(x=370, y=431)   
-        champ_password = Entry(self.tab1, textvariable=self.var_password, relief="flat", font=("Arial", 12)) #flat, groove, raised, ridge, solid, or sunken
-        champ_password.place(x=370, y=508)      
+        self.matiere_v_coches = []
+        self.matiere_no_v_coches = []
+              
 
         
         #-------------tab 3
@@ -184,10 +201,11 @@ class pagePrincipal:
         niveau_etudiant_lbl.place(x=400, y=140)
         # lbl = Label(self.tab3,image=img, bg='#174577')
         # lbl.place(x=480,y=135,height=33,width=220)
-        niveau_combo= ttk.Combobox(self.tab3,foreground='#174577',textvariable=self.var_niveau_etudiant ,font=("time new roman",12, "bold"), state="readonly")
+        niveau_combo= ttk.Combobox(self.tab3,foreground='#174577' , textvariable=self.var_niveau_etudiant ,font=("time new roman",12, "bold"), state="readonly")
         niveau_combo.place(x=490,y=140)
         niveau_combo["values"] = ("Sélectionner le niveau","Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2")
         niveau_combo.current(0)
+        # niveau_combo.bind("<<ComboboxSelected>>",self.get_matiere_unvalidate())
 
         sexe_etudiant_lbl = Label(self.tab3, text="Genre",font=("time new roman",12, "bold"),fg="black")
         sexe_etudiant_lbl.place(x=400, y=180)
@@ -210,14 +228,59 @@ class pagePrincipal:
         # lbl = Label(self.tab3,image=img, bg='#174577')
         # lbl.place(x=550,y=215,height=33,width=220)
         lieuNaissance_etudiant = Entry(self.tab3, fg ="#174577",textvariable=self.var_lieu_naissance_etudiant,relief=FLAT,font=("time new roman",12, "bold"))
-        lieuNaissance_etudiant.place(x=560,y=220)
+        lieuNaissance_etudiant.place(x=560,y=220, width=135)
+
+        matiere_etudiant_lbl = Label(self.tab3, text="Matière(s) non validé(s)",font=("time new roman",12, "bold"),fg="red")
+        matiere_etudiant_lbl.place(x=725, y=100)
+
+        #------------------------------
+        # for scrolling vertically
+        yscrollbar = Scrollbar(self.tab3)
+        yscrollbar.pack(side = RIGHT, fill = Y)
+
+        yscrollbar2 = Scrollbar(self.tab3)
+        yscrollbar2.pack(side = RIGHT, fill = Y)
+        
+        self.var_matiere_valide = StringVar()
+
+        self.list_matiere_nonValide = Listbox(self.tab3, bd=0, justify="center", height= 5 ,selectmode = "multiple", yscrollcommand = yscrollbar.set)
+        self.list_matiere_nonValide.place(x=755,y=135)
+
+        self.confirm_btn = Button(self.tab3, text=" Confirmer ", bg="red",fg="white", command= self.get_matiere_unvalidate)
+        self.confirm_btn.place(x=780, y=220)
+        
+        self.list_matiere_valide = Listbox(self.tab3, bg="red",bd=0,justify="center", height= 5 ,selectmode = "multiple", yscrollcommand = yscrollbar2.set)
+        self.list_matiere_valide.place(x=980,y=135)
+
+        self.confirm_btn = Button(self.tab3, text=" Confirmer ", bg="green",fg="white", command= self.get_matiere_validate)
+        self.confirm_btn.place(x=1000, y=220)
+
+        matiere = ["C","Reseaux","ATO","Java","Python"]
+        
+        for each_item in range(len(matiere)):            
+            self.list_matiere_nonValide.insert(END, matiere[each_item])
+            self.list_matiere_nonValide.itemconfig(each_item, bg = "white")
+
+            self.list_matiere_valide.insert(END, matiere[each_item])
+            self.list_matiere_valide.itemconfig(each_item, bg = "white")
+            
+        # Attach listbox to vertical scrollbar
+        yscrollbar.config(command = self.list_matiere_nonValide.yview)
+        yscrollbar.config(command = self.list_matiere_valide.yview)
+
+        yscrollbar2.config(command = self.list_matiere_nonValide.yview)
+        yscrollbar2.config(command = self.list_matiere_valide.yview)
+        #------------------------------
+
+        matiere_etudiant_lbl = Label(self.tab3, text="Matière(s) validé(s)",font=("time new roman",12, "bold"),fg="green")
+        matiere_etudiant_lbl.place(x=950, y=100)
 
         contactEtudiant_lbl = Label(self.tab3, text="Numero telephone",font=("time new roman",12, "bold"),fg="black")
-        contactEtudiant_lbl.place(x=725, y=140)
+        contactEtudiant_lbl.place(x=400, y=100)
         # lbl = Label(self.tab3,image=img, bg='#174577')
         # lbl.place(x=840,y=135,height=33,width=220)
         contactEtudiant_entry = Entry(self.tab3, fg ="#174577",textvariable=self.var_tel_etudiant,relief=FLAT,font=("time new roman",12, "bold"))
-        contactEtudiant_entry.place(x=875,y=140)
+        contactEtudiant_entry.place(x=550,y=100, width=145)
 
         #-----boutons
         btn_sv_p = Button(self.tab3,bg="#174577",text="Enregister", foreground="white", command=self.insert_etudiant,bd=0,cursor="hand2",activebackground="#174577")
@@ -251,7 +314,7 @@ class pagePrincipal:
         scroll_y= ttk.Scrollbar(table_frame, orient= VERTICAL)
 
 
-        self.student_table= ttk.Treeview(table_frame, columns=("id","prenom","nom","niveau","sexe","dateNaissance","lieuNaissance","telephoneEtudiant","absence_semestre"),xscrollcommand=scroll_x.set,yscrollcommand= scroll_y.set)
+        self.student_table= ttk.Treeview(table_frame, columns=("id","prenom","nom","niveau","sexe","dateNaissance","lieuNaissance","telephoneEtudiant","absence_matiere", "matiere_v", "matiere_no_v"),xscrollcommand=scroll_x.set,yscrollcommand= scroll_y.set)
         s = ttk.Style()
         s.configure('Treeview', rowheight= 40)
         s.configure("Treeview.Heading", font=("time new roman", 10, "bold"))
@@ -268,8 +331,9 @@ class pagePrincipal:
         self.student_table.heading("dateNaissance",text="Date de Naissance")
         self.student_table.heading("lieuNaissance",text="Lieu de Naissance")
         self.student_table.heading("telephoneEtudiant",text="Telephone")
-        self.student_table.heading("absence_semestre",text="Absence semestrielle")        
-        #self.student_table.heading("photo",text="Photo Profil")
+        self.student_table.heading("absence_matiere",text="Absences matieres")        
+        self.student_table.heading("matiere_v",text="Matiere(s) valide(s)")
+        self.student_table.heading("matiere_no_v",text="Matiere(s)non valide(s)")
 
         #`id_eleve`, `nom`, `adresse`, `dateNaissance`, `niveau`, `niveau`, `sexe`, `domaine`, `annee`, `contactParent`, `enseignant`, `semestre`, `photo`
 
@@ -281,17 +345,19 @@ class pagePrincipal:
         self.student_table.column("dateNaissance",width=135,stretch=0)
         self.student_table.column("lieuNaissance",width=135,stretch=0)
         self.student_table.column("telephoneEtudiant",width=120,stretch=0)
-        self.student_table.column("absence_semestre",width=140,stretch=0)
-        #self.student_table.column("photo",width=100)
+        self.student_table.column("absence_matiere",width=140,stretch=0)
+        self.student_table.column("matiere_v",width=100)
+        self.student_table.column("matiere_no_v",width=100)
 
 
         self.student_table["show"]="headings"
         self.student_table.pack(fill=BOTH,expand=1)
         self.student_table.bind("<ButtonRelease>", self.get_datatable)
+        #self.student_table.bind("<ButtonRelease>",self.get_data_alert_sms)
         self.afficher_infos_table()
 
 
-        #-------- Tableau liste de presence  Etudiant ---------------
+        #-------- Tableau  tab5  liste de presence  Etudiant ---------------
         table_frame_liste=Frame(self.tab5, bd=2, relief=RIDGE)
         table_frame_liste.place(x=0, y=235, width=1330, height=670) #w=1226
 
@@ -335,11 +401,14 @@ class pagePrincipal:
 
         self.studente_liste_presence["show"]="headings"
         self.studente_liste_presence.pack(fill=BOTH,expand=1)
-        # self.studente_liste_presence.bind("<ButtonRelease>", self.get_datatable)
+        self.studente_liste_presence.bind("<ButtonRelease>", self.get_liste_presence_details)
         self.afficher_liste()
 
         # champ de recherche
         self.var_recherche = StringVar()
+        self.var_matieres_filter = StringVar()
+        self.var_nb_presence_matiere = IntVar()
+
         recherche_cbo = Combobox(self.tab5, textvariable=self.var_recherche, foreground="black" ,font=("time new roman",25, "bold"), state="readonly")
         recherche_cbo["values"]=("Présent","Absent")
         recherche_cbo.current(0)
@@ -348,8 +417,220 @@ class pagePrincipal:
         recherche_label.place(x=200, y=150)
         recherche_btn= Button(self.tab5, text="Rechercher",bg="lightgreen",command=self.filtre,relief=FLAT, fg="black",font=("Arial", 15)) #flat, groove, raised, ridge, solid, or sunken
         recherche_btn.place(x=820, y=150)
-        recherche_btn= Button(self.tab5, text="Actualiser",bg="grey",command=self.actualiser_liste,relief=FLAT, fg="black",font=("Arial", 15)) #flat, groove, raised, ridge, solid, or sunken
-        recherche_btn.place(x=950, y=150)
+        actualiser_btn= Button(self.tab5, text="Actualiser",bg="grey",command=self.actualiser_liste,relief=FLAT, fg="black",font=("Arial", 15)) #flat, groove, raised, ridge, solid, or sunken
+        actualiser_btn.place(x=950, y=150)
+        gen_absence_btn= Button(self.tab5, text="Generer absence",bg="green",command=self.generer_absence,relief=FLAT, fg="white",font=("Arial", 15)) #flat, groove, raised, ridge, solid, or sunken
+        gen_absence_btn.place(x=1060, y=150)
+
+        lab_matiere= Label(self.tab5, text="Matières",fg="black",font=("Arial", 15)) #flat, groove, raised, ridge, solid, or sunken
+        lab_matiere.place(x=200, y=200)
+        matiere_cbo = Combobox(self.tab5, textvariable=self.var_matieres_filter, foreground="black" ,font=("time new roman",15, "bold"), state="readonly")
+        matiere_cbo["values"]=("Réseaux","Python", "ATO", "C")
+        matiere_cbo.current(0)
+        matiere_cbo.place(x=300, y=200) 
+        nombre_presence_par_matiere= Label(self.tab5, textvariable=self.var_nb_presence_matiere,fg="red",font=("Arial", 30)) #flat, groove, raised, ridge, solid, or sunken
+        nombre_presence_par_matiere.place(x=80, y=180)
+        label__= Label(self.tab5, text="Code etudiant: ",fg="black",font=("Arial", 15)) #flat, groove, raised, ridge, solid, or sunken
+        label__.place(x=700, y=200)
+
+        self.var_id = IntVar()
+        label__= Label(self.tab5, textvariable=self.var_id,fg="black",font=("Arial", 15)) #flat, groove, raised, ridge, solid, or sunken
+        label__.place(x=870, y=200)
+
+        bouton_= Button(self.tab5, command=self.nombre_absence_par_matiere, text="Calculer",fg="white",bg="blue",font=("Arial", 10)) #flat, groove, raised, ridge, solid, or sunken
+        bouton_.place(x=600, y=200)
+        
+
+    def get_liste_presence_details(self, event=""):
+        cursor_focus = self.studente_liste_presence.focus()
+        content = self.studente_liste_presence.item(cursor_focus)
+        donnees = content["values"]
+        print("Donnee tableau etudiant:\n",donnees)
+        self.var_id.set(donnees[6])
+        
+
+    def nombre_absence_par_matiere(self):
+        try:
+            conn = connection.database_connection()
+            my_curseur = conn.cursor()
+            my_curseur.execute(f"SELECT COUNT(*) FROM `presence` WHERE idEtudiant='{self.var_id.get()}' and matiere = '{self.var_matieres_filter.get()}' and status = '{self.var_recherche.get()}' ")   
+            nb_absence = my_curseur.fetchone()
+            print(nb_absence[0])
+            self.var_nb_presence_matiere.set(nb_absence[0])
+            conn.commit()
+            conn.close()
+        except Exception as ex:
+            messagebox.showinfo("Erreur",f"Une erreur est survenue: {str(ex.args)}")
+            print(f"Erreur lors de la requette :{str(ex)}")
+
+        
+    def get_matiere_unvalidate(self):            
+        
+        cname = self.list_matiere_nonValide.curselection()
+        for i in cname:
+            op = self.list_matiere_nonValide.get(i)
+            self.matiere_v_coches.append(op)
+        # for val in self.matiere_v_coches:
+        print(self.matiere_v_coches)
+
+    def get_matiere_validate(self):            
+        self.matiere_no_v_coches = []
+        cname = self.list_matiere_valide.curselection()
+        for i in cname:
+            op = self.list_matiere_valide.get(i)
+            self.matiere_no_v_coches.append(op)
+        # for val in self.matiere_no_v_coches:
+        print(self.matiere_no_v_coches)
+
+    def generer_absence(self):
+        try:
+            run_absence_confirmation = messagebox.askyesno("Absence","Confirmer le marquage des Absences pour la journée d'aujourd'hui ?", parent=self.tab5)
+            if run_absence_confirmation  > 0 :
+                conn = connection.database_connection()
+                my_curseur = conn.cursor()
+                # print("genration liste d'absence en cours...")
+                my_curseur.execute(f"SELECT * FROM `etudiant`")
+                etudiants = my_curseur.fetchall()
+                # print(f"\nEtape 1: L'ensemble des etudiants....\n{etudiants}\n")
+
+                #on recupere la date d'aujourdhui
+                date_aujourdhui = dt.date.today()
+                date_aujourdhui = date_aujourdhui.strftime("%Y-%m-%d")          
+                # print(date_aujourdhui)           
+
+                # print("Etape 2: Récupère id de l'etudiant ...\n")
+                heure_actuelle = time.strftime("%H:%M:%S")
+
+                for etudiant in etudiants: 
+                    # print(f"Infos d'un etudiant: \n {etudiant}\n")
+                    # print(f"ID meme etudiant: {etudiant[0]}\n")
+                    id = etudiant[0]
+
+                    # verifie si cet etudiant est deja present pour la date d'aujourdhui
+                    my_curseur.execute(f"SELECT * FROM `presence` WHERE idEtudiant = {id} AND date = '{date_aujourdhui}' ")#AND status='Présent'")
+                    present_oui_non = my_curseur.fetchone()
+
+                    nom_prenom = etudiant[1] + " " + etudiant[2]
+                    if present_oui_non is not None:
+                        # print(f"Etudiant  {etudiant[1], etudiant[2]} deja marque ou présent:\n)")# {present_oui_non}\n")
+                        pass
+                    else:
+                        # on verifie si cet etudaint a valider cette matiere...
+                        my_curseur.execute(f"SELECT * FROM `etudiant` WHERE id_etudiant = {id}")
+                        etudiant = my_curseur.fetchone() 
+                        liste_des_matire_valide_par_etu = etudiant[9]
+                        print(f"Etudiant: {(liste_des_matire_valide_par_etu)}")
+                        
+                        # inserer cet etudiant dans la liste avec status=absent
+                        matiere="Python"
+
+                        if str(matiere) in liste_des_matire_valide_par_etu:
+                            variables = (
+                                date_aujourdhui,
+                                "TD",
+                                matiere,
+                                "VALIDE",
+                                "Abdou Khadre Diop",
+                                id,
+                                nom_prenom,
+                                "17:15",
+                                heure_actuelle,
+                            )
+                            my_curseur.execute("INSERT INTO `presence` (`id`, `date`, `seance`, `matiere`, `status`, `enseignant`, `idEtudiant`, `nomPrenomEtudiant`, `heureDebut`, `heureFin`) VALUES (null, %s,%s,%s,%s,%s,%s,%s,%s,%s) ", variables)
+                            my_curseur.execute(f"UPDATE `etudiant` SET absence_matiere = absence_matiere + 1 WHERE id_etudiant = {id}")
+                            conn.commit()
+                        else: 
+                            variables = (
+                                date_aujourdhui,
+                                "TD",
+                                matiere,
+                                "Absent",
+                                "Abdou Khadre Diop",
+                                id,
+                                nom_prenom,
+                                "17:15",
+                                heure_actuelle,
+                            )
+                            my_curseur.execute("INSERT INTO `presence` (`id`, `date`, `seance`, `matiere`, `status`, `enseignant`, `idEtudiant`, `nomPrenomEtudiant`, `heureDebut`, `heureFin`) VALUES (null, %s,%s,%s,%s,%s,%s,%s,%s,%s) ", variables)
+                            my_curseur.execute(f"UPDATE `etudiant` SET absence_matiere = absence_matiere + 1 WHERE id_etudiant = {id}")
+                            conn.commit()
+                            print(f"..{nom_prenom} marqué absent pour aujourdhui..")
+                
+                conn.close()
+                messagebox.showinfo("Absence",f"Marquage des Absences pour la date d'aujourd'hui {date_aujourdhui} effectué avec succés !", parent=self.tab5)
+                self.actualiser_liste()
+
+        except Exception as e:
+
+            print("erreur dans 'run_absence()'...",e)
+            messagebox.showerror("Erreur",f"Attention une erreur est survenue: \n {str(e.args)}")
+            print(f"Erreur {str(e)} ") 
+    
+    def envoie_sms(self, contact, nom_eleve):
+            BASE_URL = "ejl32n.api.infobip.com"
+            API_KEY = "d83cb93f2a1322ac17f450a802290ae8-9e283a45-6f53-4922-b3d9-643cd7db4d78"
+
+            client_config = Configuration(
+                host= BASE_URL,
+                api_key={"APIKeyHeader": API_KEY},
+                api_key_prefix={"APIKeyHeader": "App"},
+            )
+
+            api_client = ApiClient(client_config)
+
+            sms_request = SmsAdvancedTextualRequest(
+                messages = [
+                    SmsTextualMessage(
+                        destinations=[
+                            SmsDestination(
+                                to=str(contact),
+                            ),
+                        ],
+                        _from="SMS UABD",
+                        text=f"Bonjour chère etudiant  {nom_eleve}  nous somme navré mais vous a cumulé plus de 2 absences non justifiées au cours de cette semaine.\n Votre présence au sein de l'administration est vivement souhaité durant cette semaine pour soumettre des motifs de votre absence régulière",
+                    )
+                ]
+            )
+
+            api_instance = SendSmsApi(api_client)
+
+            try:
+                api_response: SmsResponse = api_instance.send_sms_message(sms_advanced_textual_request=sms_request)
+                print(api_response)
+                messagebox.showinfo("Message Envoyé","Envoie réussi !\nMessage reçu par l'etudiant'",parent=self.root)
+            except ApiException as ex:
+                print("Erreur lors de l'envoie du message au Parent.")
+                messagebox.showerror("Problème","Erreur lors de l'envoie du Message à l'etudiant ou peut etre du a un probleme de réseaux",parent=self.root)
+                print(ex)     
+    
+    def get_data_alert_sms(self, event=""):
+        cursor_focus = self.student_table.focus()
+        content = self.student_table.item(cursor_focus)
+        data = content["values"]
+        print(data)
+        # self.var_nom_eleve.set(data[1]+' '+ data[2]),
+        # self.var_contact_parent.set(data[4])
+        send_sms = messagebox.askyesno("Envoie de message",f"Confirmer l'envoie du message vers cet etudiant:\n Prenom nom: {data[1]+' '+ data[2]} \n Telephone: {data[7]}", parent=self.root)
+        
+        if send_sms > 0 :
+            # pass
+            nom_prenom = data[1]+' '+ data[2]
+            self.envoie_sms(str(data[7]), nom_prenom)
+            conn = connection.database_connection()
+            my_curseur = conn.cursor()            
+            val=(data[0],)
+            # reset du nombre absence semestre a zero
+            sql_sup="UPDATE `eleve` SET absence_matiere = 0 WHERE id_etudiant=%s"            
+            my_curseur.execute(sql_sup,val)
+
+            # sql = "DELETE FROM `liste_rouge` WHERE id_eleve=%s"
+            # my_curseur.execute(sql,val)            
+           
+            conn.commit()
+            conn.close()            
+            # self.show_liste_rouge()
+
+
     
     def filtre(self):
         try:
@@ -664,7 +945,7 @@ class pagePrincipal:
                     messagebox.showerror("Attention","cet identifiant existe déjà)",parent=self.tab3)
                     print("Cet identifiant existe déjà")                                        
                 else:
-                    my_curseur.execute("INSERT INTO `etudiant` (`prenom`, `nom`, `niveau`, `sexe`, `dateNaissance`, `lieuNaissance`, `telephone`, `absence_semestre`)VALUES (%s,%s,%s,%s,%s,%s,%s,0)",
+                    my_curseur.execute("INSERT INTO `etudiant` (`prenom`, `nom`, `niveau`, `sexe`, `dateNaissance`, `lieuNaissance`, `telephone`, `absence_matiere`, `matiere_valide`, `matiere_non_valide` ) VALUES (%s,%s,%s,%s,%s,%s,%s,0,%s,%s)",
                         ( 
                             self.var_prenom_etudiant.get(),
                             self.var_nom_etudiant.get(),
@@ -673,6 +954,8 @@ class pagePrincipal:
                             self.var_date_naissance_etudiant.get(),
                             self.var_lieu_naissance_etudiant.get(),
                             self.var_tel_etudiant.get(),
+                            str(self.matiere_v_coches),
+                            str(self.matiere_no_v_coches)
                         )
                     )
                     conn.commit()
